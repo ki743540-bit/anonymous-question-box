@@ -1,420 +1,684 @@
-```html
 <!DOCTYPE html>
-<html lang="ja" class="dark">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#07090e">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>VOYD - 匿名フレンドSNS</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            void: '#07090e',
-            voidcard: '#10141d',
-            voidborder: '#1f2637',
-            accent: '#00f2fe',
-            accent2: '#4facfe',
-            neonpink: '#ff007f'
-          }
-        }
-      }
-    }
-  </script>
+  
   <style>
-    body, html {
-      height: 100%;
+    * {
+      box-sizing: border-box;
       margin: 0;
-      background-color: #07090e;
-      color: #e2e8f0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+    :root {
+      --bg-void: #07090e;
+      --bg-card: #111522;
+      --bg-card-light: #182032;
+      --border-void: #1f273d;
+      --accent: #00f2fe;
+      --accent-grad: linear-gradient(135deg, #00f2fe 0%, #4facfe 100%);
+      --neon-pink: #ff007f;
+      --text-main: #f8fafc;
+      --text-muted: #8492a6;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+    }
+    html, body {
+      height: 100%;
+      width: 100%;
+      background-color: var(--bg-void);
+      color: var(--text-main);
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       overflow: hidden;
-      -webkit-tap-highlight-color: transparent;
       user-select: none;
     }
-    .feed-container {
-      scroll-snap-type: y mandatory;
-      overflow-y: scroll;
-      height: calc(100% - 64px);
-      -webkit-overflow-scrolling: touch;
-      scrollbar-width: none;
-    }
-    .feed-container::-webkit-scrollbar { display: none; }
-    .feed-item {
-      scroll-snap-align: start;
-      scroll-snap-stop: always;
+
+    #app-container {
+      display: flex;
+      flex-direction: column;
       height: 100%;
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      background: var(--bg-void);
+      position: relative;
+      box-shadow: 0 0 60px rgba(0,0,0,0.85);
+      overflow: hidden;
+    }
+
+    header {
+      height: 52px;
+      padding: 0 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-void);
+      background: rgba(17, 21, 34, 0.94);
+      backdrop-filter: blur(12px);
+      z-index: 30;
+      flex-shrink: 0;
+    }
+    .logo-area {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .logo {
+      font-size: 20px;
+      font-weight: 900;
+      letter-spacing: 2px;
+      background: var(--accent-grad);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      cursor: pointer;
+      user-select: none;
+    }
+    .badge-anon {
+      font-size: 10px;
+      background: #1c2438;
+      color: #94a3b8;
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-family: monospace;
+      font-weight: 700;
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    #announcement-bar {
+      display: none;
+      background: linear-gradient(90deg, #ff007f 0%, #7928ca 100%);
+      color: #ffffff;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 0.5px;
+      animation: bannerSlide 0.3s ease;
+      z-index: 25;
+      flex-shrink: 0;
+    }
+    @keyframes bannerSlide {
+      from { transform: translateY(-100%); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    main {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .view-screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .view-screen.active {
+      display: flex;
+    }
+
+    #story-bar {
+      height: 72px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 0 14px;
+      background: rgba(12, 16, 26, 0.7);
+      border-bottom: 1px solid var(--border-void);
+      overflow-x: auto;
+      scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    #story-bar::-webkit-scrollbar { display: none; }
+    .story-bubble {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      flex-shrink: 0;
+      cursor: pointer;
+    }
+    .story-ring {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      padding: 2px;
+      background: var(--accent-grad);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .story-ring.seen {
+      background: #334155;
+    }
+    .story-avatar-inner {
+      width: 100%;
+      height: 100%;
+      background: #090d16;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+    }
+    .story-label {
+      font-size: 9px;
+      color: #94a3b8;
+      max-width: 50px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .feed-scroll {
+      flex: 1;
+      overflow-y: scroll;
+      scroll-snap-type: y mandatory;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
       position: relative;
     }
-    .tap-pop {
-      animation: popEffect 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    .feed-scroll::-webkit-scrollbar { display: none; }
+
+    .feed-card {
+      height: 100%;
+      width: 100%;
+      scroll-snap-align: start;
+      scroll-snap-stop: always;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: 16px;
+      background: #080b12;
+      border-bottom: 1px solid var(--border-void);
     }
-    @keyframes popEffect {
-      0% { transform: scale(0.6); opacity: 0; }
-      100% { transform: scale(1); opacity: 1; }
+    .feed-media-wrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      background: #070a10;
+    }
+    .feed-media-wrap img, .feed-media-wrap video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .feed-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(0,0,0,0.5) 0%, transparent 22%, transparent 68%, rgba(0,0,0,0.88) 100%);
+      pointer-events: none;
+    }
+    .feed-text-card {
+      padding: 28px 24px;
+      text-align: center;
+      max-width: 88%;
+      font-size: 16px;
+      line-height: 1.65;
+      color: #f8fafc;
+      background: linear-gradient(145deg, rgba(26, 33, 53, 0.7), rgba(12, 16, 26, 0.9));
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 20px;
+      backdrop-filter: blur(10px);
+      word-break: break-word;
+      user-select: text;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    }
+
+    .feed-actions {
+      position: absolute;
+      right: 14px;
+      bottom: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 15px;
+      z-index: 10;
     }
     .action-btn {
+      background: rgba(14, 18, 28, 0.75);
+      border: 1px solid rgba(255,255,255,0.12);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
-      transition: transform 0.15s ease;
+      color: #f1f5f9;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: transform 0.15s ease, background 0.15s;
     }
-    .action-btn:active {
-      transform: scale(0.85);
+    .action-btn:active { transform: scale(0.85); }
+    .action-btn.liked { color: var(--neon-pink); border-color: var(--neon-pink); }
+    .action-btn.saved { color: var(--accent); border-color: var(--accent); }
+    .action-label {
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 1px;
+      color: #cbd5e1;
+    }
+
+    .reaction-picker {
+      position: absolute;
+      right: 56px;
+      bottom: 120px;
+      background: rgba(14, 19, 32, 0.95);
+      border: 1px solid var(--border-void);
+      border-radius: 30px;
+      padding: 6px 12px;
+      display: none;
+      gap: 8px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 30px rgba(0,0,0,0.7);
+      z-index: 25;
+      animation: popIn 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .reaction-picker.open { display: flex; }
+    .reaction-emoji-btn {
+      background: none;
+      border: none;
+      font-size: 20px;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+    .reaction-emoji-btn:active { transform: scale(1.3); }
+
+    .feed-header-info {
+      position: relative;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .feed-author-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 0, 0, 0.5);
+      border: 1px solid rgba(255,255,255,0.08);
+      padding: 5px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #f1f5f9;
+      backdrop-filter: blur(8px);
+    }
+    .feed-bottom-info {
+      position: relative;
+      z-index: 5;
+      max-width: 80%;
+      margin-bottom: 6px;
+    }
+    .feed-caption {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #f1f5f9;
+      user-select: text;
+      margin-bottom: 4px;
+      text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+    }
+    .feed-tag {
+      font-size: 11px;
+      color: var(--accent);
+      font-family: monospace;
+    }
+
+    nav {
+      height: 60px;
+      background: #0d121e;
+      border-top: 1px solid var(--border-void);
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      align-items: center;
+      z-index: 30;
+      flex-shrink: 0;
+    }
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: none;
+      border: none;
+      color: #64748b;
+      cursor: pointer;
+      gap: 3px;
+      height: 100%;
+      transition: color 0.15s;
+    }
+    .nav-item svg { width: 22px; height: 22px; fill: currentColor; }
+    .nav-item span { font-size: 10px; font-weight: 600; }
+    .nav-item.active { color: var(--accent); }
+    
+    .nav-post-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-grad);
+      color: #07090e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 0 18px rgba(0,242,254,0.4);
+      transition: transform 0.15s;
+      margin: 0 auto;
+    }
+    .nav-post-btn:active { transform: scale(0.9); }
+    .nav-post-btn svg { width: 22px; height: 22px; stroke: #07090e; stroke-width: 3; fill: none; }
+
+    .card-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border-void);
+      border-radius: 16px;
+      padding: 18px;
+    }
+    .btn-primary {
+      width: 100%;
+      padding: 12px;
+      background: var(--accent-grad);
+      color: #07090e;
+      border: none;
+      border-radius: 12px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      transition: opacity 0.2s, transform 0.1s;
+    }
+    .btn-primary:active { opacity: 0.85; transform: scale(0.98); }
+    
+    .btn-secondary {
+      width: 100%;
+      padding: 11px;
+      background: #172033;
+      color: #cbd5e1;
+      border: 1px solid var(--border-void);
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .btn-secondary:active { background: #1e2b45; }
+
+    .input-box {
+      width: 100%;
+      background: #090d16;
+      border: 1px solid var(--border-void);
+      color: #f1f5f9;
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-box:focus { border-color: var(--accent); }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-sheet {
+      width: 100%;
+      max-width: 480px;
+      background: #0e1320;
+      border-top: 1px solid var(--border-void);
+      border-radius: 24px 24px 0 0;
+      padding: 20px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      overflow-y: auto;
+      animation: sheetUp 0.25s ease-out;
+    }
+    @keyframes sheetUp {
+      from { transform: translateY(100%); }
+      to { transform: translateY(0); }
+    }
+    .modal-sheet-center {
+      margin: auto 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border-void);
+      animation: popIn 0.2s ease-out;
+    }
+    @keyframes popIn {
+      from { transform: scale(0.9); opacity: 0; }
+      to { transform: scale(1); opacity: 1; }
+    }
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-void);
+      padding-bottom: 10px;
+    }
+    .modal-title { font-size: 14px; font-weight: 700; color: #f8fafc; }
+    .modal-close {
+      background: none;
+      border: none;
+      color: #64748b;
+      font-size: 24px;
+      cursor: pointer;
+      line-height: 1;
+    }
+
+    #custom-confirm-modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.88);
+      backdrop-filter: blur(8px);
+      z-index: 250;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    #custom-confirm-modal.open { display: flex; }
+    .confirm-box {
+      width: 100%;
+      max-width: 320px;
+      background: #111625;
+      border: 1px solid var(--border-void);
+      border-radius: 18px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      text-align: center;
+      animation: popIn 0.2s ease;
+    }
+
+    #toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px);
+      background: rgba(17, 22, 36, 0.96);
+      border: 1px solid var(--accent);
+      color: #f1f5f9;
+      font-size: 12px;
+      padding: 9px 20px;
+      border-radius: 30px;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.25s ease;
+      z-index: 300;
+      white-space: nowrap;
+      box-shadow: 0 4px 24px rgba(0,242,254,0.3);
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* 空状態メッセージ */
+    .empty-state {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 30px;
+      color: var(--text-muted);
+      gap: 12px;
+    }
+    .empty-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--bg-card);
+      border: 1px solid var(--border-void);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
     }
   </style>
 </head>
-<body class="flex flex-col h-full bg-void text-slate-100 antialiased">
+<body>
 
-  <!-- ヘッダー -->
-  <header class="h-14 bg-voidcard/90 backdrop-blur border-b border-voidborder flex items-center justify-between px-4 z-20 flex-shrink-0">
-    <div class="flex items-center space-x-2">
-      <!-- 5回タップでAdmin認証が起動する隠しトリガー -->
-      <span id="logo-btn" class="text-xl font-extrabold tracking-wider bg-gradient-to-r from-accent to-accent2 bg-clip-text text-transparent cursor-pointer select-none">
-        VOYD
-      </span>
-      <span class="text-[10px] bg-voidborder px-1.5 py-0.5 rounded text-slate-400 font-mono">ANON</span>
-    </div>
-    <div class="flex items-center space-x-3">
-      <button onclick="App.openSearchModal()" class="p-2 text-slate-400 hover:text-slate-200">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-      </button>
-      <button onclick="App.openInviteModal()" class="p-2 text-accent hover:opacity-80">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
-      </button>
-    </div>
-  </header>
-
-  <!-- メインコンテンツ領域 -->
-  <main class="flex-1 relative overflow-hidden">
+  <div id="app-container">
     
-    <!-- 1. ホーム (縦スワイプフィード) -->
-    <div id="view-home" class="h-full w-full flex flex-col">
-      <!-- 24時間ストーリー枠 -->
-      <div id="story-bar" class="h-16 border-b border-voidborder flex items-center px-3 space-x-3 overflow-x-auto scrollbar-none flex-shrink-0 bg-voidcard/40">
-        <button onclick="App.openCreateStoryModal()" class="flex flex-col items-center space-y-1 flex-shrink-0">
-          <div class="w-10 h-10 rounded-full border-2 border-dashed border-accent flex items-center justify-center text-accent text-lg font-light">+</div>
-          <span class="text-[9px] text-slate-400">ストーリー</span>
-        </button>
-        <div id="story-list" class="flex space-x-3 items-center">
-          <!-- ストーリー動的描画 -->
-        </div>
+    <!-- 運営アナウンスバナー -->
+    <div id="announcement-bar"></div>
+
+    <!-- ヘッダー -->
+    <header>
+      <div class="logo-area">
+        <!-- ロゴ5回タップで管理者ゲート起動 -->
+        <span class="logo" id="btn-logo">VOYD</span>
+        <span class="badge-anon">ANONYMOUS</span>
       </div>
-
-      <!-- 縦スワイプフィードコンテナ -->
-      <div id="feed-container" class="feed-container">
-        <!-- 投稿が空の場合のプレースホルダー -->
-        <div id="feed-empty" class="h-full flex flex-col items-center justify-center p-6 text-center text-slate-500 space-y-3">
-          <div class="w-16 h-16 rounded-full bg-voidcard border border-voidborder flex items-center justify-center text-2xl">
-            🕶️
-          </div>
-          <p class="text-sm font-medium">投稿がまだありません</p>
-          <p class="text-xs text-slate-600 max-w-xs">右上の「+」または下の「投稿」ボタンから最初の匿名動画・画像・テキストを共有してください。</p>
-        </div>
-      </div>
-    </div>
-
-    <!-- 2. 友達 (招待コード・QR共有) -->
-    <div id="view-friends" class="h-full w-full hidden overflow-y-auto p-4 space-y-4">
-      <div class="bg-voidcard border border-voidborder p-5 rounded-2xl text-center space-y-4 shadow-xl">
-        <h2 class="text-lg font-bold text-slate-200">友達と安全につながる</h2>
-        <p class="text-xs text-slate-400 leading-relaxed">
-          電話番号、連絡先、GPSは一切利用しません。<br>
-          以下のQRコードまたは招待コードを友達に教えてください。
-        </p>
-        
-        <div class="flex justify-center p-3 bg-white rounded-xl inline-block mx-auto" id="qrcode-container"></div>
-
-        <div class="bg-void p-3 rounded-lg border border-voidborder flex items-center justify-between">
-          <span class="text-xs text-slate-400">あなたの招待コード:</span>
-          <span id="user-invite-code" class="font-mono text-accent font-bold text-sm tracking-wider">------</span>
-        </div>
-
-        <button onclick="App.copyInviteCode()" class="w-full py-2.5 bg-voidborder hover:bg-slate-700 text-xs text-slate-200 rounded-xl transition">
-          招待リンクをコピー
+      <div>
+        <button class="action-btn" style="width:34px;height:34px;" onclick="App.openInviteView()">
+          <svg style="width:16px;height:16px;fill:none;stroke:#00f2fe;stroke-width:2.5;" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
         </button>
       </div>
+    </header>
 
-      <!-- 友達追加フォーム -->
-      <div class="bg-voidcard border border-voidborder p-5 rounded-2xl space-y-3">
-        <h3 class="text-sm font-bold text-slate-200">友達のコードを入力</h3>
-        <div class="flex space-x-2">
-          <input id="input-friend-code" type="text" placeholder="招待コードを入力" class="flex-1 bg-void border border-voidborder px-3 py-2 text-xs rounded-xl focus:outline-none focus:border-accent">
-          <button onclick="App.addFriendByCode()" class="px-4 py-2 bg-gradient-to-r from-accent to-accent2 text-void text-xs font-bold rounded-xl">追加</button>
-        </div>
-      </div>
-
-      <!-- 友達リスト -->
-      <div class="space-y-2">
-        <h3 class="text-xs font-semibold text-slate-400 px-1">友達一覧 (<span id="friend-count">0</span>)</h3>
-        <div id="friend-list-items" class="space-y-2">
-          <div class="text-center py-6 text-slate-600 text-xs">まだ友達がいません</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. メッセージ (DM) -->
-    <div id="view-messages" class="h-full w-full hidden flex flex-col">
-      <div id="dm-thread-list" class="flex-1 overflow-y-auto p-4 space-y-2">
-        <div class="text-center py-12 text-slate-600 text-xs">メッセージはまだありません</div>
-      </div>
-    </div>
-
-    <!-- 4. 保存済み投稿 -->
-    <div id="view-saved" class="h-full w-full hidden overflow-y-auto p-4 space-y-3">
-      <h2 class="text-sm font-bold text-slate-300">保存した投稿</h2>
-      <div id="saved-list" class="grid grid-cols-2 gap-3">
-        <div class="col-span-2 text-center py-12 text-slate-600 text-xs">保存された投稿はありません</div>
-      </div>
-    </div>
-
-  </main>
-
-  <!-- 下部ナビゲーションバー -->
-  <nav class="h-16 bg-voidcard border-t border-voidborder grid grid-cols-5 items-center px-1 z-20 flex-shrink-0">
-    <button onclick="App.switchTab('home')" class="nav-btn flex flex-col items-center justify-center text-accent" data-tab="home">
-      <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
-      <span class="text-[10px] mt-0.5">ホーム</span>
-    </button>
-    <button onclick="App.switchTab('friends')" class="nav-btn flex flex-col items-center justify-center text-slate-400 hover:text-slate-200" data-tab="friends">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-      <span class="text-[10px] mt-0.5">友達</span>
-    </button>
-    <button onclick="App.openCreatePostModal()" class="flex flex-col items-center justify-center">
-      <div class="w-11 h-11 rounded-full bg-gradient-to-r from-accent to-accent2 flex items-center justify-center text-void shadow-lg shadow-accent/20 active:scale-95 transition">
-        <svg class="w-6 h-6 stroke-[3]" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-      </div>
-    </button>
-    <button onclick="App.switchTab('messages')" class="nav-btn flex flex-col items-center justify-center text-slate-400 hover:text-slate-200" data-tab="messages">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
-      <span class="text-[10px] mt-0.5">メッセージ</span>
-    </button>
-    <button onclick="App.switchTab('saved')" class="nav-btn flex flex-col items-center justify-center text-slate-400 hover:text-slate-200" data-tab="saved">
-      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
-      <span class="text-[10px] mt-0.5">保存</span>
-    </button>
-  </nav>
-
-  <!-- モーダル群 -->
-
-  <!-- 投稿作成モーダル -->
-  <div id="modal-create-post" class="fixed inset-0 bg-black/80 backdrop-blur z-50 hidden flex items-end sm:items-center justify-center p-0 sm:p-4">
-    <div class="bg-voidcard border border-voidborder w-full max-w-lg rounded-t-3xl sm:rounded-3xl p-5 space-y-4 max-h-[90vh] overflow-y-auto">
-      <div class="flex justify-between items-center pb-2 border-b border-voidborder">
-        <h3 class="text-sm font-bold text-slate-200">匿名で投稿を作成</h3>
-        <button onclick="App.closeModals()" class="text-slate-400 hover:text-white text-xl leading-none">&times;</button>
-      </div>
-
-      <div class="space-y-3">
-        <textarea id="post-caption" rows="3" placeholder="何をシェアしますか？（完全に匿名として投稿されます）" class="w-full bg-void border border-voidborder rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-accent resize-none"></textarea>
-
-        <!-- メディアプレビュー -->
-        <div id="media-preview" class="hidden relative rounded-xl overflow-hidden bg-void border border-voidborder aspect-video flex items-center justify-center">
-          <img id="preview-img" class="hidden w-full h-full object-cover">
-          <video id="preview-video" class="hidden w-full h-full object-cover" controls></video>
-          <button onclick="App.removeMedia()" class="absolute top-2 right-2 p-1.5 bg-black/70 rounded-full text-white text-xs">&times;</button>
-        </div>
-
-        <div class="flex items-center space-x-2">
-          <label class="cursor-pointer px-3 py-2 bg-voidborder hover:bg-slate-700 text-xs rounded-xl text-slate-200 flex items-center space-x-1.5">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-            <span>メディアを追加</span>
-            <input type="file" id="media-input" accept="image/*,video/*" class="hidden" onchange="App.handleMediaSelect(event)">
-          </label>
-        </div>
-
-        <button onclick="App.submitPost()" class="w-full py-3 bg-gradient-to-r from-accent to-accent2 text-void font-bold text-xs rounded-xl shadow-lg transition active:scale-[0.98]">
-          投稿する
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- コメントモーダル -->
-  <div id="modal-comments" class="fixed inset-0 bg-black/80 backdrop-blur z-50 hidden flex items-end justify-center">
-    <div class="bg-voidcard border-t border-voidborder w-full max-w-lg rounded-t-3xl p-5 flex flex-col h-[70vh]">
-      <div class="flex justify-between items-center pb-3 border-b border-voidborder">
-        <h3 class="text-sm font-bold text-slate-200">コメント (<span id="comment-post-count">0</span>)</h3>
-        <button onclick="App.closeModals()" class="text-slate-400 hover:text-white text-2xl leading-none">&times;</button>
-      </div>
-      <div id="comment-list" class="flex-1 overflow-y-auto py-3 space-y-3">
-        <!-- 動的描画 -->
-      </div>
-      <div class="pt-3 border-t border-voidborder flex space-x-2">
-        <input id="comment-input" type="text" placeholder="匿名でコメント..." class="flex-1 bg-void border border-voidborder px-3 py-2 rounded-xl text-xs text-slate-200 focus:outline-none focus:border-accent">
-        <button onclick="App.submitComment()" class="px-4 py-2 bg-accent text-void font-bold text-xs rounded-xl">送信</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 製作者専用 ADMIN AUTH モーダル -->
-  <div id="modal-admin-auth" class="fixed inset-0 bg-black/90 backdrop-blur z-50 hidden flex items-center justify-center p-4">
-    <div class="bg-voidcard border border-voidborder w-full max-w-sm rounded-2xl p-6 space-y-4 shadow-2xl">
-      <div class="flex justify-between items-center">
-        <h3 class="text-xs font-mono font-bold text-accent tracking-wider uppercase">System Gate</h3>
-        <button onclick="App.closeModals()" class="text-slate-500 hover:text-white text-lg">&times;</button>
-      </div>
-      <div class="space-y-3">
-        <input id="admin-pass-input" type="password" placeholder="Passcode" class="w-full bg-void border border-voidborder rounded-xl p-3 text-sm text-center font-mono focus:outline-none focus:border-accent">
-        <button onclick="App.verifyAdmin()" class="w-full py-2.5 bg-voidborder hover:bg-slate-700 text-xs font-mono text-slate-200 rounded-xl transition">
-          Authenticate
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 製作者専用 ADMIN DASHBOARD モーダル -->
-  <div id="modal-admin-panel" class="fixed inset-0 bg-void z-50 hidden flex flex-col">
-    <div class="h-14 border-b border-voidborder flex items-center justify-between px-4 bg-voidcard">
-      <div class="flex items-center space-x-2 font-mono">
-        <span class="text-xs font-bold text-neonpink">● ADMIN CONSOLE</span>
-      </div>
-      <button onclick="App.closeAdmin()" class="px-3 py-1.5 bg-voidborder rounded-lg text-xs font-mono text-slate-300">EXIT</button>
-    </div>
-    
-    <div class="flex-1 overflow-y-auto p-4 space-y-6 max-w-3xl mx-auto w-full font-mono text-xs">
+    <!-- メインコンテンツ画面群 -->
+    <main>
       
-      <!-- メトリクス -->
-      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div class="bg-voidcard border border-voidborder p-3 rounded-xl">
-          <div class="text-slate-500">POSTS</div>
-          <div id="admin-stat-posts" class="text-lg font-bold text-accent">0</div>
+      <!-- 1. ホームフィード -->
+      <div id="view-home" class="view-screen active">
+        <!-- 24時間ストーリーバー -->
+        <div id="story-bar">
+          <div class="story-bubble" onclick="App.openCreateStoryModal()">
+            <div class="story-ring" style="background:#1e293b;">
+              <div class="story-avatar-inner" style="color:var(--accent);">+</div>
+            </div>
+            <span class="story-label">ストーリー</span>
+          </div>
+          <div id="story-items-container" style="display:flex; gap:12px;"></div>
         </div>
-        <div class="bg-voidcard border border-voidborder p-3 rounded-xl">
-          <div class="text-slate-500">COMMENTS</div>
-          <div id="admin-stat-comments" class="text-lg font-bold text-accent2">0</div>
-        </div>
-        <div class="bg-voidcard border border-voidborder p-3 rounded-xl">
-          <div class="text-slate-500">FRIENDS</div>
-          <div id="admin-stat-friends" class="text-lg font-bold text-neonpink">0</div>
-        </div>
-        <div class="bg-voidcard border border-voidborder p-3 rounded-xl">
-          <div class="text-slate-500">REPORTS</div>
-          <div id="admin-stat-reports" class="text-lg font-bold text-amber-400">0</div>
-        </div>
-      </div>
 
-      <!-- プロジェクト保存 / HTML出力 -->
-      <div class="bg-voidcard border border-voidborder p-4 rounded-xl space-y-3">
-        <div class="font-bold text-slate-200">PROJECT EXPORT / DOWNLOAD</div>
-        <p class="text-[11px] text-slate-400">
-          このアプリケーション全体の単一HTMLファイルを生成し、端末にダウンロード保存します。
-        </p>
-        <div class="flex flex-col sm:flex-row gap-2">
-          <button onclick="App.exportStandaloneHtml()" class="flex-1 py-2.5 bg-accent text-void font-bold rounded-xl text-center">
-            HTMLファイルを保存・ダウンロード
-          </button>
-          <button onclick="App.copyStandaloneCode()" class="flex-1 py-2.5 bg-voidborder hover:bg-slate-700 text-slate-200 rounded-xl text-center">
-            全コードをコピー
-          </button>
-        </div>
-        <div id="admin-export-direct-link" class="hidden pt-2"></div>
-      </div>
-
-      <!-- 投稿モデレーション -->
-      <div class="bg-voidcard border border-voidborder p-4 rounded-xl space-y-3">
-        <div class="font-bold text-slate-200">POST MANAGEMENT</div>
-        <div id="admin-post-list" class="space-y-2 max-h-60 overflow-y-auto">
-          <!-- 投稿一覧 -->
+        <!-- 縦スワイプフィード -->
+        <div id="feed-container" class="feed-scroll">
+          <div class="empty-state" id="feed-empty">
+            <div class="empty-icon">🕶️</div>
+            <div style="font-size: 14px; font-weight: 700; color: #f1f5f9;">投稿がまだありません</div>
+            <div style="font-size: 11px; max-width: 250px; line-height: 1.6; color:#94a3b8;">
+              下の「＋」ボタンから、動画・画像・テキストを完全に匿名で投稿できます。
+            </div>
+          </div>
         </div>
       </div>
 
-      <!-- バックアップ & リセット -->
-      <div class="bg-voidcard border border-voidborder p-4 rounded-xl space-y-3">
-        <div class="font-bold text-slate-200">DATA MANAGEMENT</div>
-        <div class="flex gap-2">
-          <button onclick="App.backupData()" class="flex-1 py-2 bg-voidborder text-slate-200 rounded-xl">データバックアップ(JSON)</button>
-          <button onclick="App.resetAllData()" class="flex-1 py-2 bg-red-900/40 border border-red-800 text-red-300 rounded-xl">全データ初期化</button>
+      <!-- 2. 友達 (招待・QR) -->
+      <div id="view-friends" class="view-screen" style="overflow-y:auto; padding:16px; gap:16px;">
+        <div class="card-box" style="text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+          <div style="font-size: 15px; font-weight: 700; color: #f8fafc;">安全な招待制コネクト</div>
+          <div style="font-size: 11px; color: var(--text-muted); line-height: 1.6;">
+            電話番号・連絡先・現在地は一切取得しません。<br>
+            QRコードや招待コードを使って安全に友達を追加できます。
+          </div>
+          
+          <div id="qr-wrapper" style="background:#ffffff; padding:12px; border-radius:14px; margin: 4px 0; box-shadow: 0 4px 20px rgba(0,0,0,0.5);">
+            <!-- 純粋SVG QRコード表示領域 (外部CDN完全不要) -->
+            <svg id="qr-svg" width="140" height="140" viewBox="0 0 140 140"></svg>
+          </div>
+
+          <div style="display:flex; justify-content:space-between; width:100%; background:#090d16; padding:10px 14px; border-radius:10px; border:1px solid var(--border-void); align-items:center;">
+            <span style="font-size: 11px; color: var(--text-muted);">あなたの招待コード:</span>
+            <span id="label-invite-code" style="font-family:monospace; font-weight:700; font-size:14px; color:var(--accent);">------</span>
+          </div>
+
+          <button class="btn-secondary" onclick="App.copyInviteCode()">招待リンクをコピー</button>
+        </div>
+
+        <!-- 友達のコードを入力 -->
+        <div class="card-box" style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="font-size: 13px; font-weight: 700; color: #f1f5f9;">友達のコードを入力して追加</div>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="input-friend-code" placeholder="招待コードを入力" class="input-box" style="font-family:monospace; text-transform:uppercase;">
+            <button class="btn-primary" style="width: 80px;" onclick="App.addFriend()">追加</button>
+          </div>
+        </div>
+
+        <!-- 友達一覧 -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); padding-left: 4px;">
+            友達リスト (<span id="count-friends">0</span>)
+          </div>
+          <div id="friends-list" style="display: flex; flex-direction: column; gap: 8px;">
+            <div style="text-align: center; padding: 24px; font-size: 11px; color: #475569;">まだ友達がいません</div>
+          </div>
         </div>
       </div>
 
-    </div>
-  </div>
+      <!-- 3. メッセージ (DM) -->
+      <div id="view-messages" class="view-screen" style="overflow-y:auto; padding:16px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #f1f5f9;">匿名ダイレクトメッセージ</div>
+        <div id="dm-list" style="display: flex; flex-direction: column; gap: 8px;">
+          <div class="empty-state" style="height: 320px;">
+            <div class="empty-icon">💬</div>
+            <div style="font-size: 13px; color: #64748b; font-weight:600;">メッセージはまだありません</div>
+            <div style="font-size: 11px; color: #475569;">友達リストから直接メッセージを開始できます。</div>
+          </div>
+        </div>
+      </div>
 
-  <!-- 通知トースト -->
-  <div id="toast" class="fixed top-5 left-1/2 -translate-x-1/2 bg-voidcard/95 border border-accent/40 text-slate-100 text-xs px-4 py-2 rounded-full shadow-2xl z-50 transition-all duration-300 pointer-events-none opacity-0 translate-y-[-10px]">
-    通知メッセージ
-  </div>
+      <!-- 4. 保存一覧 (ブックマーク) -->
+      <div id="view-saved" class="view-screen" style="overflow-y:auto; padding:16px;">
+        <div style="font-size: 14px; font-weight: 700; margin-bottom: 12px; color: #f1f5f9;">保存した投稿</div>
+        <div id="saved-grid" style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+          <div style="grid-column: span 2; text-align: center; padding: 40px 0; font-size: 12px; color: #475569;">
+            保存された投稿はありません
+          </div>
+        </div>
+      </div>
 
-  <script>
-    // ==========================================
-    // VOYD アプリケーション コアロジック
-    // ==========================================
+    </main>
 
-    const App = (function() {
-      // 内部データストア
-      let state = {
-        user: {
-          id: 'user_' + Math.random().toString(36).substr(2, 8),
-          name: '匿名',
-          inviteCode: Math.random().toString(36).substr(2, 6).toUpperCase()
-        },
-        posts: [],
-        friends: [],
-        stories: [],
-        savedPostIds: [],
-        reports: [],
-        currentTab: 'home',
-        activePostForComment: null
-      };
-
-      let logoTapCount = 0;
-      let logoTapTimer = null;
-
-      // 初期化
-      function init() {
-        loadData();
-        setupLogoEasterEgg();
-        renderFeed();
-        renderFriends();
-        renderStories();
-        initQRCode();
-      }
-
-      function loadData() {
-        const savedState = localStorage.getItem('voyd_state');
-        if (savedState) {
-          try {
-            const parsed = JSON.parse(savedState);
-            state = Object.assign(state, parsed);
-            state.user.name = '匿名'; // 常に匿名表示を徹底
-          } catch(e) {}
-        }
-      }
-
-      function saveData() {
-        localStorage.setItem('voyd_state', JSON.stringify(state));
-      }
-
-      // ロゴ5回タップ検知 (製作者専用Adminゲート)
-      function setupLogoEasterEgg() {
-        const logo = document.getElementById('logo-btn');
-        if (!logo) return;
-        logo.addEventListener('click', () => {
-          logoTapCount++;
-          clearTimeout(logoTapTimer);
-          logoTapTimer = setTimeout(() => { logoTapCount = 0; }, 1500);
-
-          if (logoTapCount >= 5) {
-            logoTapCount = 0;
-            openAdminAuth();
-          }
-        });
-      }
-
-      function openAdminAuth() {
-        document.getElementById('modal-admin-auth').classList.remove('hidden');
-        document.getElementById('admin-pass-input').value = '';
-        document.getElementById('admin-pass-input').focus();
-      }
-
-      function verifyAdmin() {
-        const pass = document.getElementById('admin-pass-input').value;
-        if (pass === 'funa0207') {
-          closeModals();
-          openAdminPane
+    <!-- 下部ナビゲーション -->
+    <nav>
+      <button class="nav-item active" onclick="App.switchTab('home')" id="tab-home">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>ホーム</span>
+      </button>
+      <button class="nav-item" onclick="App.switchTab('friends')" id="tab-friends">
+        <svg viewBox="0 0 24 24"><path d="M16 11c
